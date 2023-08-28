@@ -11,8 +11,7 @@ import GoogleMaps from './GoogleMaps';
 
 function App() {
   return (
-    <div>
-      <p>Hello World!</p>
+    <div className='App'>
       <GoogleMaps />
     </div>
   );
