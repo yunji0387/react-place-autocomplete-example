@@ -24,11 +24,13 @@ function loadScript(src, position, id) {
 
 const autocompleteService = { current: null };
 
-export default function GoogleMaps() {
+export default function GoogleMaps({ onSearch }) {
     const [value, setValue] = React.useState(null);
     const [inputValue, setInputValue] = React.useState('');
     const [options, setOptions] = React.useState([]);
     const loaded = React.useRef(false);
+
+    const [searchTerm, setSearchTerm] = React.useState('');
 
     if (typeof window !== 'undefined' && !loaded.current) {
         if (!document.querySelector('#google-maps')) {
@@ -87,6 +89,26 @@ export default function GoogleMaps() {
         };
     }, [value, inputValue, fetch]);
 
+    React.useEffect(() => {
+        console.log("---------");
+        if (value !== null) {
+            // console.log(value);
+            setSearchTerm(value);
+            onSearch(searchTerm);
+        }
+    }, [value]);
+
+    const handleKeyPress = (event) => {
+        if (event.key === "Enter") {
+            onSearch(searchTerm);
+        }
+    };
+
+    React.useEffect(() => {
+        console.log("========");
+        console.log(searchTerm);
+    }, [searchTerm]);
+
     return (
         <Autocomplete
             id="google-map-demo"
@@ -107,7 +129,9 @@ export default function GoogleMaps() {
             }}
             onInputChange={(event, newInputValue) => {
                 setInputValue(newInputValue);
+                setSearchTerm(newInputValue);
             }}
+            onKeyDown={handleKeyPress}
             renderInput={(params) => (
                 <TextField
                     {...params}
