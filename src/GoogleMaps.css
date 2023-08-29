@@ -1,0 +1,53 @@
+.google-maps-container {
+    background-color: blue;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    width: 500px;
+}
+
+.location-search-input {
+    border: 3px solid #ccc;
+    border-radius: 20px;
+    width: 85%;
+    height: 35px;
+    font-size: 20px;
+    padding: 0 25px;
+    background-color: blanchedalmond;
+}
+
+/* CSS for input placeholder */
+.location-search-input::placeholder {
+    font-size: 20px;
+}
+
+.autocomplete-dropdown-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: aquamarine;
+    width: 90%;
+}
+
+/* CSS for suggestion item styling */
+.suggestion-item {
+    width: 90%;
+    background-color: #ffffff;
+    cursor: pointer;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.suggestion-item--active {
+    width: 90%;
+    background-color: #ccc;
+    cursor: pointer;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
