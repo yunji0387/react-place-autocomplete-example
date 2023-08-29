@@ -1,203 +1,75 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import parse from 'autosuggest-highlight/parse';
-import { debounce } from '@mui/material/utils';
+import React, { useState, useEffect } from 'react';
+import PlacesAutocomplete, {
+    geocodeByAddress,
+    getLatLng,
+} from 'react-places-autocomplete';
+import useScript from 'react-script-hook';
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
-function loadScript(src, position, id) {
-    if (!position) {
-        return;
+export default function GoogleMaps() {
+    const [address, setAddress] = useState("");
+    const [coordinates, setCoordinates] = useState({
+        lat: null,
+        lng: null
+    });
+
+    const [loading, error] = useScript({ src: "https://maps.googleapis.com/maps/api/js?key="+ GOOGLE_MAPS_API_KEY +"&libraries=places" });
+
+    if (loading) return <h3>Loading Stripe API...</h3>;
+    if (error) return <h3>Failed to load Stripe API: {error.message}</h3>;
+
+    const handleSelect = async value => {
+        const result = await geocodeByAddress(value);
+        const latLon = await getLatLng(result[0]);
+        console.log(latLon)
+        setAddress(value);
+        setCoordinates(latLon);
     }
-
-    const script = document.createElement('script');
-    script.setAttribute('async', '');
-    script.setAttribute('id', id);
-    script.src = src;
-    position.appendChild(script);
-}
-
-const autocompleteService = { current: null };
-
-export default function GoogleMaps({ onSearch }) {
-    const [value, setValue] = React.useState(null);
-    const [inputValue, setInputValue] = React.useState('');
-    const [options, setOptions] = React.useState([]);
-    const loaded = React.useRef(false);
-
-    const [searchTerm, setSearchTerm] = React.useState('');
-
-    if (typeof window !== 'undefined' && !loaded.current) {
-        if (!document.querySelector('#google-maps')) {
-            loadScript(
-                `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`,
-                document.querySelector('head'),
-                'google-maps',
-            );
-        }
-
-        loaded.current = true;
-    }
-
-    const fetch = React.useMemo(
-        () =>
-            debounce((request, callback) => {
-                autocompleteService.current.getPlacePredictions(request, callback);
-            }, 400),
-        [],
-    );
-
-    React.useEffect(() => {
-        let active = true;
-
-        if (!autocompleteService.current && window.google) {
-            autocompleteService.current =
-                new window.google.maps.places.AutocompleteService();
-        }
-        if (!autocompleteService.current) {
-            return undefined;
-        }
-
-        if (inputValue === '') {
-            setOptions(value ? [value] : []);
-            return undefined;
-        }
-
-        fetch({ input: inputValue }, (results) => {
-            if (active) {
-                let newOptions = [];
-
-                if (value) {
-                    newOptions = [value];
-                }
-
-                if (results) {
-                    newOptions = [...newOptions, ...results];
-                }
-
-                setOptions(newOptions);
-            }
-        });
-
-        return () => {
-            active = false;
-        };
-    }, [value, inputValue, fetch]);
-
-    React.useEffect(() => {
-        console.log("---------");
-        if (value !== null) {
-            // console.log(value);
-            setSearchTerm(value);
-            onSearch(searchTerm);
-        }
-    }, [value]);
-
-    const handleKeyPress = (event) => {
-        if (event.key === "Enter") {
-            onSearch(searchTerm);
-        }
-    };
-
-    React.useEffect(() => {
-        console.log("========");
-        console.log(searchTerm);
-    }, [searchTerm]);
 
     return (
-        <Autocomplete
-            id="google-map-demo"
-            sx={{ width: 500 }}
-            getOptionLabel={(option) =>
-                typeof option === 'string' ? option : option.description
-            }
-            filterOptions={(x) => x}
-            options={options}
-            autoComplete
-            includeInputInList
-            filterSelectedOptions
-            value={value}
-            noOptionsText="No locations"
-            onChange={(event, newValue) => {
-                setOptions(newValue ? [newValue, ...options] : options);
-                setValue(newValue);
-            }}
-            onInputChange={(event, newInputValue) => {
-                setInputValue(newInputValue);
-                setSearchTerm(newInputValue);
-            }}
-            onKeyDown={handleKeyPress}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    label="Enter a location here."
-                    fullWidth
-                    sx={{
-                        "& .MuiInputLabel-root": { color: 'grey', fontSize: 20, paddingLeft: 1 },
-                        "& .MuiOutlinedInput-root": {
-                            "& > fieldset": {
-                                borderColor: "darkgrey",
-                                borderWidth: 3,
-                                borderRadius: 10
-                            },
-                        },
-                        "& .MuiOutlinedInput-root.Mui-focused": {
-                            "& > fieldset": {
-                                borderColor: "black",
-                                borderWidth: 3,
-                                borderTopLeftRadius: 15,
-                                fontSize: 20
-                            }
-                        },
-                        "& .MuiOutlinedInput-root:hover": {
-                            "& > fieldset": {
-                                borderColor: "grey"
-                            }
-                        }
-                    }}
-
-                />
-            )}
-            renderOption={(props, option) => {
-                const matches =
-                    option.structured_formatting.main_text_matched_substrings || [];
-
-                const parts = parse(
-                    option.structured_formatting.main_text,
-                    matches.map((match) => [match.offset, match.offset + match.length]),
-                );
-
-                return (
-                    <li {...props}>
-                        <Grid container alignItems="center">
-                            <Grid item sx={{ display: 'flex', width: 44 }}>
-                                <LocationOnIcon sx={{ color: 'text.secondary' }} />
-                            </Grid>
-                            <Grid item sx={{ width: 'calc(100% - 44px)', wordWrap: 'break-word' }}>
-                                {parts.map((part, index) => (
-                                    <Box
-                                        key={index}
-                                        component="span"
-                                        sx={{
-                                            fontWeight: part.highlight ? 'bold' : 'regular'
-                                        }}
+        <div>
+            <p>lat: {coordinates.lat}</p>
+            <p>lon: {coordinates.lng}</p>
+            <PlacesAutocomplete
+                value={address}
+                onChange={setAddress}
+                onSelect={handleSelect}
+            >
+                {({ getInputProps, suggestions, getSuggestionItemProps, loading }) => (
+                    <div>
+                        <input
+                            {...getInputProps({
+                                placeholder: 'Search Places ...',
+                                className: 'location-search-input',
+                            })}
+                        />
+                        <div className="autocomplete-dropdown-container">
+                            {loading && <div>Loading...</div>}
+                            {suggestions.map((suggestion, index) => {
+                                const className = suggestion.active
+                                    ? 'suggestion-item--active'
+                                    : 'suggestion-item';
+                                // inline style for demonstration purpose
+                                const style = suggestion.active
+                                    ? { backgroundColor: '#fafafa', cursor: 'pointer' }
+                                    : { backgroundColor: '#ffffff', cursor: 'pointer' };
+                                return (
+                                    <div
+                                        key={index} // Add a unique key prop
+                                        {...getSuggestionItemProps(suggestion, {
+                                            className,
+                                            style,
+                                        })}
                                     >
-                                        {part.text}
-                                    </Box>
-                                ))}
-                                <Typography variant="body2" color="text.secondary">
-                                    {option.structured_formatting.secondary_text}
-                                </Typography>
-                            </Grid>
-                        </Grid>
-                    </li>
-                );
-            }}
-        />
+                                        <span>{suggestion.description}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </PlacesAutocomplete>
+        </div>
     );
 }
